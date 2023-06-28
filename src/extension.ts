@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const commandHandler = (command:string) => {
 		const config = vscode.workspace.getConfiguration('chatgpt');
 		const prompt = config.get(command) as string;
-		provider.search(prompt);
+		provider.search(prompt, command);
 	};
 
 	// Register the commands that can be called from the extension's package.json
@@ -56,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('chatgpt.optimize', () => commandHandler('promptPrefix.optimize')),
 		vscode.commands.registerCommand('chatgpt.findProblems', () => commandHandler('promptPrefix.findProblems')),
 		vscode.commands.registerCommand('chatgpt.documentation', () => commandHandler('promptPrefix.documentation')),
+		vscode.commands.registerCommand('chatgpt.correctDocumentation', () => commandHandler('promptPrefix.correctDocumentation')),
 		vscode.commands.registerCommand('chatgpt.resetConversation', () => provider.resetConversation())
 	);
 
@@ -216,7 +217,7 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 	}
 
 
-	public async search(prompt?:string) {
+	public async search(prompt?:string, command?:string) {
 		this._prompt = prompt;
 		if (!prompt) {
 			prompt = '';
@@ -296,13 +297,25 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 					return;
 				}
 
-
+        
 				console.log(res);
-
+        
 				response = res.text;
 				if (res.detail?.usage?.total_tokens) {
-					response += `\n\n---\n*<sub>Tokens used: ${res.detail.usage.total_tokens} (${res.detail.usage.prompt_tokens}+${res.detail.usage.completion_tokens})</sub>*`;
+          response += `\n\n---\n*<sub>Tokens used: ${res.detail.usage.total_tokens} (${res.detail.usage.prompt_tokens}+${res.detail.usage.completion_tokens})</sub>*`;
 				}
+        
+        if (command === "promptPrefix.correctDocumentation") {
+          const editor = vscode.window.activeTextEditor;
+          if (editor) {
+            const selection = editor.selection;
+            const selectedText = editor.document.getText(selection);
+
+            editor.edit(editBuilder => {
+                editBuilder.replace(selection, res.text);
+            });
+          }
+        }
 
 				if (this._settings.keepConversation){
 					this._conversation = {
@@ -332,6 +345,103 @@ class ChatGPTViewProvider implements vscode.WebviewViewProvider {
 			this._view.webview.postMessage({ type: 'addResponse', value: response });
 		}
 	}
+
+/*   public async search(prompt?:string) {
+		this._prompt = prompt;
+		if (!prompt) {
+			prompt = '';
+		};
+
+		// Check if the ChatGPTAPI instance is defined
+		if (!this._chatGPTAPI) {
+			this._newAPI();
+		}
+
+		// focus gpt activity from activity bar
+		if (!this._view) {
+			await vscode.commands.executeCommand('chatgpt.chatView.focus');
+		} else {
+			this._view?.show?.(true);
+		}
+		
+		let response = '';
+		this._response = '';
+		// Get the selected text of the active editor
+		const selection = vscode.window.activeTextEditor?.selection;
+		const selectedText = vscode.window.activeTextEditor?.document.getText(selection);
+		// Get the language id of the selected text of the active editor
+		// If a user does not want to append this information to their prompt, leave it as an empty string
+		const languageId = (this._settings.codeblockWithLanguageId ? vscode.window.activeTextEditor?.document?.languageId : undefined) || "";
+		let searchPrompt = '';
+
+		if (selection && selectedText) {
+			// If there is a selection, add the prompt and the selected text to the search prompt
+			if (this._settings.selectedInsideCodeblock) {
+				searchPrompt = `${prompt}\n\`\`\`${languageId}\n${selectedText}\n\`\`\``;
+			} else {
+				searchPrompt = `${prompt}\n${selectedText}\n`;
+			}
+		} else {
+			// Otherwise, just use the prompt if user typed it
+			searchPrompt = prompt;
+		}
+		this._fullPrompt = searchPrompt;
+		
+		// Increment the message number
+		this._currentMessageNumber++;
+		let currentMessageNumber = this._currentMessageNumber;
+
+		if (!this._chatGPTAPI) {
+			response = '[ERROR] "API key not set or wrong, please go to extension settings to set it (read README.md for more info)"';
+		} else {
+			// If successfully signed in
+			console.log("sendMessage");
+			
+			// Make sure the prompt is shown
+			this._view?.webview.postMessage({ type: 'setPrompt', value: this._prompt });
+			this._view?.webview.postMessage({ type: 'addResponse', value: '...' });
+
+			const agent = this._chatGPTAPI;
+     
+			try {
+
+				const response = "This is the stubbed out response";
+
+
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+          const selection = editor.selection;
+          const selectedText = editor.document.getText(selection);
+
+          const replacedText = selectedText.replace(/hello/g, 'world');
+
+          editor.edit(editBuilder => {
+              editBuilder.replace(selection, response);
+          });
+        }
+
+			} catch (e:any) {
+				console.error(e);
+				if (this._currentMessageNumber === currentMessageNumber){
+					response = this._response;
+					response += `\n\n---\n[ERROR] ${e}`;
+				}
+			}
+		}
+
+		if (this._currentMessageNumber !== currentMessageNumber) {
+			return;
+		}
+
+		// Saves the response
+		this._response = response;
+
+		// Show the view and send a message to the webview with the response
+		if (this._view) {
+			this._view.show?.(true);
+			this._view.webview.postMessage({ type: 'addResponse', value: response });
+		}
+	} */
 
 	private _getHtmlForWebview(webview: vscode.Webview) {
 

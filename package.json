@@ -2,12 +2,12 @@
   "name": "chatgpt",
   "displayName": "ChatGPT: write and improve code using AI",
   "description": "Use ChatGPT and GPT4 right inside the IDE to enhance and automate your coding with AI-powered assistance (unofficial)",
-  "version": "1.1.2",
-  "publisher": "timkmecl",
+  "version": "1.0.0",
+  "publisher": "davidritter",
   "icon": "resources/extensionIcon.png",
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/timkmecl/chatgpt-vscode"
+    "url": "https://github.com/davidritter/chatgpt-vscode-rwc"
   },
   "engines": {
     "vscode": "^1.73.0"
@@ -34,7 +34,8 @@
     "onCommand:chatgpt.refactor",
     "onCommand:chatgpt.optimize",
     "onCommand:chatgpt.findProblems",
-    "onCommand:chatgpt.documentation"
+    "onCommand:chatgpt.documentation",
+    "onCommand:chatgpt.correctDocumentation"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -62,6 +63,10 @@
       {
         "command": "chatgpt.documentation",
         "title": "ChatGPT: Write documentation"
+      },
+      {
+        "command": "chatgpt.correctDocumentation",
+        "title": "ChatGPT: Correct documentation"
       },
       {
         "command": "chatgpt.resetConversation",
@@ -103,6 +108,11 @@
           "command": "chatgpt.documentation",
           "when": "editorHasSelection",
           "group": "chatgpt-menu-group@6"
+        },
+        {
+          "command": "chatgpt.correctDocumentation",
+          "when": "editorHasSelection",
+          "group": "chatgpt-menu-group@7"
         }
       ],
       "commandPalette": [
@@ -127,6 +137,10 @@
         },
         {
           "command": "chatgpt.documentation",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "chatgpt.correctDocumentation",
           "when": "editorHasSelection"
         },
         {
@@ -207,6 +221,12 @@
           "description": "The prompt prefix used for writing documentation for the selected code",
           "order": 7
         },
+        "chatgpt.promptPrefix.correctDocumentation": {
+          "type": "string",
+          "default": "You are now a documentation snippet analysis tool. Given a snippet of documentation, you are update the snippet (if required) to ensure it is in an active voice and present tense. Your response should ONLY be the corrected snippet. Please preserve any special characters such as /, *, and other formatting. Here is the snippet:",
+          "description": "The prompt prefix used for correcting documentation for the selected code",
+          "order": 8
+        },
         "chatgpt.promptPrefix.optimize": {
           "type": "string",
           "default": "Optimize the following code if there is anything to improve, if not say so: ",
@@ -217,25 +237,25 @@
           "type": "boolean",
           "default": true,
           "description": "Keep the conversation going by using the same conversation ID for all requests (allows follow-up questions)",
-          "order": 8
+          "order": 9
         },
         "chatgpt.timeoutLength": {
           "type": "number",
           "default": "120",
           "description": "How long should the request wait for a response before timing out (in seconds)",
-          "order": 9
+          "order": 10
         },
         "chatgpt.selectedInsideCodeblock": {
           "type": "boolean",
           "default": true,
           "description": "Append selected code as a codeblock (```...code...```) instead of plain text",
-          "order": 10
+          "order": 11
         },
         "chatgpt.codeblockWithLanguageId": {
           "type": "boolean",
           "default": true,
           "description": "Append language id of the selected code to the codeblock (```language...code...```)",
-          "order": 11
+          "order": 12
         }
       }
     }
@@ -271,6 +291,8 @@
   "dependencies": {
     "chatgpt": "^5.2.2",
     "gpt3-tokenizer": "^1.1.5",
-    "node-fetch": "^3.3.0"
+    "keyv": "^4.5.2",
+    "node-fetch": "^3.3.0",
+    "tiktoken": "^1.0.10"
   }
 }
